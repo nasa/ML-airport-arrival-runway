@@ -1,0 +1,13 @@
+name: Arrival Runway Prediction
+
+conda_env: conda.yaml
+
+entry_points:
+  main:
+    command: "kedro run"
+  all:
+    command: "kedro run --pipeline all"
+  dqs:
+    command: "kedro run --pipeline dqs"
+  de:
+    command: "kedro run --pipeline de"

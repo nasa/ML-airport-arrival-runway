@@ -1,0 +1,19 @@
+name: arr-rwy-env
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python=3.7
+  - scikit-learn=0.23.2
+  - pandas=1.1.*
+  - numpy=1.19.*
+  - cloudpickle=1.4.1
+  - mlflow=1.19
+  - xgboost=1.2.0
+  - kedro=0.16.4
+  - psycopg2=2.8.5
+  - scp=0.13.2
+  - matplotlib=3.3.*
+  - pip
+  - pip:
+    - data_services<1.0.2,>=1.0.1dev80

@@ -1,0 +1,26 @@
+globals:
+
+    airport_icao: KLGA
+
+    surface_surveillance_available: True
+
+    batch_mode:
+        batch_days: 14
+        overlap_days: 1
+        pipelines:
+        - dqs
+        - de
+
+
+
+    start_time: 2020-04-25
+    end_time: 2020-12-31
+    fuser_db_credentials: fuser_db_credentials
+    runway_db_credentials: runways_db_credentials
+    config_db_credentials: airportconf_db_credentials
+
+    known_runways:
+        - '4'
+        - '22'
+        - '13'
+        - '31'

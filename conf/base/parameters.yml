@@ -1,0 +1,148 @@
+# Copy of globals to facilitate access
+globals: ${globals}
+
+mlflow:
+    tracking_uri: XXXXX
+    experiment_name: ML-airport-arrival-runway
+    run_name: XXXXX
+    modeler_name: XXXXX
+
+ntx_connection:
+    host: XXXXX
+    port: XXXXX
+    username: XXXXX
+
+random_seed: 1234
+
+# Fraction of whole dataset to reserve for testing
+test_size: 0.05
+
+# Fraction of training dataset to use for training
+#   Implemented because full training dataset is too large
+tv_timestep_fraction_train: 0.05
+
+# Time step length for creating intermediate rows in TV dataset
+tv_timestep: 60s
+
+# Controls for logging inside the pipeline
+pipeline_inspect_data_verbosity: 0
+data_inspector_verbosity: 0
+
+df_join_kwargs:
+    mfs_data_set:
+        runways_data_set:
+            how: left
+            'on': gufi
+            suffixes:
+                - _mfs
+                - _via_surveillance
+    ntv_df:
+        config_data_set:
+            left_on: arrival_runway_actual_time
+            right_on: config_start_time
+            allow_exact_matches: True
+            direction: backward
+    tv_df:
+        ntv_df:
+            how: left
+            'on': gufi
+
+runway_cols_to_clean:
+    - arrival_runway_assigned
+    - arrival_runway_actual
+
+difference_columns:
+    lookahead:
+        - arrival_runway_best_time
+        - timestamp
+    airport_configuration_lifetime:
+        - timestamp
+        - config_start_time
+
+target:
+    name: arrival_runway_actual
+    type: str
+    constraints:
+        include_learned: true
+
+inputs:
+    lookahead:
+        core: true
+        type: float
+        constraints:
+            min: 0
+            max: 14400
+    arrival_fix_source_data:
+        core: true
+        type: str
+        encoder: OneHotEncoder
+        encoder_params:
+            handle_unknown: error
+        constraints:
+            include_learned: true
+    filed_flight:
+        core: false
+        type: bool
+        imputer: SimpleImputer
+        imputer_params:
+            strategy: constant
+            fill_value: false  #TODO: add a filing status unknown column?
+    arrival_runway_assigned:
+        core: false
+        type: str
+        imputer: SimpleImputer
+        imputer_params:
+            strategy: constant
+            fill_value: UNKN
+        encoder: OneHotEncoder
+        encoder_params:
+            handle_unknown: ignore
+    airport_configuration_name:
+        core: true
+        type: str
+        encoder: AirportConfigEncoder  #This will drop the input field
+    aircraft_engine_class:
+        core: false
+        type: str
+        imputer: SimpleImputer
+        imputer_params:
+            strategy: most_frequent
+        encoder: OneHotEncoder
+        encoder_params:
+            handle_unknown: ignore
+        constraints:
+            include_learned: true
+            allowable_vals:
+                - JET
+                - TURBO
+                - PISTON
+    wake_turbulence_category:
+        core: false
+        type: str
+        imputer: SimpleImputer
+        imputer_params:
+            strategy: most_frequent
+        encoder: OneHotEncoder
+        encoder_params:
+            handle_unknown: ignore
+        constraints:
+            include_learned: true
+            allowable_vals:
+                - A
+                - B
+                - C
+                - D
+                - E
+                - F
+
+models:
+    # LogisticRegression:
+    #     baseline: false
+    #     model_params:
+    #         max_iter: 10000
+    #         multi_class: multinomial
+    XGBClassifier:
+        baseline: false
+        model_params:
+            random_state: 42
+            objective: 'multi:softmax'
