@@ -2,6 +2,20 @@
 
 The ML-airport-arrival-runway software is developed to provide a reference implementation to serve as a research example how to train and register Machine Learning (ML) models intended for predicting arrival runway assignments. The software is designed to point to databases which are not provided as part of the software release and thus this software is only intended to serve as an example of best practices. The software is built in python and leverages open-source libraries kedro, scikitlearn, MLFlow, and others. The software provides examples how to build three distinct pipelines for data query and save, data engineering, and data science. These pipelines enable scalable, repeatable, and maintainable development of ML models.
 
+## ML Airport Surface Model Background Information
+
+The ML-airport-arrival-runway model is one of several ML models tied together by the Airport Surface Model Orchestrator shown below.
+
+![Airport Surface Model Orchestrator Diagram](images/orchestrator.png) 
+
+The Airport Surface Model Orchestrator runs at fixed intervals and is driven from real-time Fused FAA System Wide Information Management (SWIM) data feeds and also pulls in additional D-ATIS airport configuration data and weather data. The data input manager within the Orchestrator prepares data for each ML service and data is exchanged between the Orchestrator and the ML services via API interfaces.
+
+The input data sources for the individual ML prediction services are shown in the below diagram which also illustrates dependencies between the individual ML services.
+
+![ML Model Diagram](images/ml_models.png)
+
+The ML Airport Surface Model forms the building blocks of a cloud based predictive engine that alerts flight operators to pre-departure Trajectory Option Set (TOS) reroute opportunities within the terminal airspace. The ML Airport Surface Model was designed to be a scalable replacement for the capabilities provided by NASA's Surface Trajectory Based Operations (STBO) subsystem, which is a component of the fielded ATD2 Phase 3 System in the North Texas Metroplex. The STBO subsystem relies heavily upon detailed adaptation, which defines the physical constraints and encodes Subject Matter Expert knowledge within decision trees, and creates a costly bottleneck to scaling the pre-departure TOS digital reroute capability across the National Airspace System.
+
 ## Overview
 
 This is your new Kedro project, which was generated using `Kedro 0.16.4` by running:
