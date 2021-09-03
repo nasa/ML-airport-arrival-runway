@@ -16,139 +16,45 @@ The input data sources for the individual ML prediction services are shown in th
 
 The ML Airport Surface Model forms the building blocks of a cloud based predictive engine that alerts flight operators to pre-departure Trajectory Option Set (TOS) reroute opportunities within the terminal airspace. The ML Airport Surface Model was designed to be a scalable replacement for the capabilities provided by NASA's Surface Trajectory Based Operations (STBO) subsystem, which is a component of the fielded ATD2 Phase 3 System in the North Texas Metroplex. The STBO subsystem relies heavily upon detailed adaptation, which defines the physical constraints and encodes Subject Matter Expert knowledge within decision trees, and creates a costly bottleneck to scaling the pre-departure TOS digital reroute capability across the National Airspace System.
 
-## Overview
+## Steps to start using this project (and some helpful information about Kedro + MLflow projects)
 
-This is your new Kedro project, which was generated using `Kedro 0.16.4` by running:
+In addition to the steps below, take a look at the [Kedro documentation](https://kedro.readthedocs.io) and the [MLflow documentation](https://mlflow.org/docs/latest/index.html) for more help getting started.
 
+## Set up the project conda environment
+
+Create new environment from `conda.yml` file
 ```
-kedro new
+conda env create -f conda.yaml
 ```
-
-Take a look at the [documentation](https://kedro.readthedocs.io) to get started.
-
-## Rules and guidelines
-
-In order to get the best out of the template:
-
- * Please don't remove any lines from the `.gitignore` file we provide
- * Make sure your results can be reproduced by following a data engineering convention, e.g. the one we suggest [here](https://kedro.readthedocs.io/en/stable/06_resources/01_faq.html#what-is-data-engineering-convention)
- * Don't commit any data to your repository
- * Don't commit any credentials or local configuration to your repository
- * Keep all credentials or local configuration in `conf/local/`
-
-## Installing dependencies
-
-Declare any dependencies in `src/requirements.txt` for `pip` installation and `src/environment.yml` for `conda` installation.
-
-To install them, run:
-
+Then activate the environment.
 ```
-kedro install
+conda activate arr-rwy-env
 ```
 
-## Running Kedro
+## Configure Kedro
 
-You can run your Kedro project with:
+*Credentials*
+credentials.yml defines username, host, port to access a database which we assume has FUSER data.
+A Kedro `credentials.yml` file needs to be created in `conf/local/`.
+An example of such a file is in `credentials-template.yml`.
 
-```
-kedro run
-```
+*Per-airport Globals*
 
-## Testing Kedro
+In this project, each model is trained for a particular airport.
+The airport and potentially airport-specific items are specified in `conf/base/globals.yml` or `conf/base/<airport_icao>_globals.yml`, where `<airport_icao>` is the ICAO identifier for an airport (e.g., KCLT).
+Which particular `globals.yml` is used is specified at run time as a parameter specified in the `kedro run` command line interfaces (described below) or the airport specific file can be copied into `globals.yml`.
+This approach is based on [Kedro's templated configurations capability](https://kedro.readthedocs.io/en/stable/04_kedro_project_setup/02_configuration.html#templating-configuration).
+Implementing it required us to overwrite the `_create_config_loader` method in `src/taxi_in/run.py` to use a [TemplatedConfigLoader](https://kedro.readthedocs.io/en/stable/kedro.config.TemplatedConfigLoader.html) in a way similar to what is described in the Kedro documentation, but extended to allow for the `global_config_yml` command line interface parameter.
 
-Have a look at the file `src/tests/test_run.py` for instructions on how to write your tests. You can run your tests with the following command:
+If using Kedro's Jupyter notebook or IPython integrations, the overall `globals.yml` is always used (i.e., there is not currently any way to specify which airport-specific `<airport_icao>.globals.yml` to use when initiating the Jupyter notebook session).
+The overall `globals.yml` can be updated during a Jupyter or IPython session (e.g., to specify a different airport) if, after changing the file, the `%reload_kedro` command is executed in the Jupyter notebook or IPython console session.
+This will update the Kedro `context` variable to take into account the updated `globals.yml`.
+See the "Working with Kedro from notebooks or IPython" section below and the [relevant Kedro documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/11_ipython.html) for additional information about Kedro's Jupyter and IPython capabilities.
 
-```
-kedro test
-```
+*Parameters*
+The `conf/base/parameters.yml` file contains any parameters that control various aspects of the pipelines that engineer data and train and test models. This file can be airport-specific as well, and in that case the  ICAO identifier will prefix the file (`<airport_icao>_parameters.yml`).
+The parameters file specifies, for instance, the type of maching learning model that should be used and what hyperparameters will control its training.
+You may wish to update some of these parameters.
+Items in `parameters.yml` that are surrounded by `${` and `}` will be imported from the `globals.yml`.
+[Kedro's configuration templating documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/03_configuration.html#templating-configuration) provides additional information about templated configurations via `globals.yml`.
 
-To configure the coverage threshold, please have a look at the file `.coveragerc`.
-
-
-## Working with Kedro from notebooks
-
-In order to use notebooks in your Kedro project, you need to install Jupyter:
-
-```
-pip install jupyter
-```
-
-For using Jupyter Lab, you need to install it:
-
-```
-pip install jupyterlab
-```
-
-After installing Jupyter, you can start a local notebook server:
-
-```
-kedro jupyter notebook
-```
-
-You can also start Jupyter Lab:
-
-```
-kedro jupyter lab
-```
-
-And if you want to run an IPython session:
-
-```
-kedro ipython
-```
-
-Running Jupyter or IPython this way provides the following variables in
-scope: `proj_dir`, `proj_name`, `conf`, `io`, `parameters` and `startup_error`.
-
-### Converting notebook cells to nodes in a Kedro project
-
-Once you are happy with a notebook, you may want to move your code over into the Kedro project structure for the next stage in your development. This is done through a mixture of [cell tagging](https://jupyter-notebook.readthedocs.io/en/stable/changelog.html#cell-tags) and Kedro CLI commands.
-
-By adding the `node` tag to a cell and running the command below, the cell's source code will be copied over to a Python file within `src/<package_name>/nodes/`.
-```
-kedro jupyter convert <filepath_to_my_notebook>
-```
-> *Note:* The name of the Python file matches the name of the original notebook.
-
-Alternatively, you may want to transform all your notebooks in one go. To this end, you can run the following command to convert all notebook files found in the project root directory and under any of its sub-folders.
-```
-kedro jupyter convert --all
-```
-
-### Ignoring notebook output cells in `git`
-
-In order to automatically strip out all output cell contents before committing to `git`, you can run `kedro activate-nbstripout`. This will add a hook in `.git/config` which will run `nbstripout` before anything is committed to `git`.
-
-> *Note:* Your output cells will be left intact locally.
-
-## Package the project
-
-In order to package the project's Python code in `.egg` and / or a `.wheel` file, you can run:
-
-```
-kedro package
-```
-
-After running that, you can find the two packages in `src/dist/`.
-
-## Building API documentation
-
-To build API docs for your code using Sphinx, run:
-
-```
-kedro build-docs
-```
-
-See your documentation by opening `docs/build/html/index.html`.
-
-## Building the project requirements
-
-To generate or update the dependency requirements for your project, run:
-
-```
-kedro build-reqs
-```
-
-This will copy the contents of `src/requirements.txt` into a new file `src/requirements.in` which will be used as the source for `pip-compile`. You can see the output of the resolution by opening `src/requirements.txt`.
-
-After this, if you'd like to update your project requirements, please update `src/requirements.in` and re-run `kedro build-reqs`.
