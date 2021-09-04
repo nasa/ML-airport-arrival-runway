@@ -34,6 +34,7 @@ conda activate arr-rwy-env
 ## Configure Kedro
 
 *Credentials*
+
 credentials.yml defines username, host, port to access a database which we assume has FUSER data.
 A Kedro `credentials.yml` file needs to be created in `conf/local/`.
 An example of such a file is in `credentials-template.yml`.
