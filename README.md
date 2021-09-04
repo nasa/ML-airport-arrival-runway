@@ -1,8 +1,8 @@
-## Arrival Runway Prediction
+### Arrival Runway Prediction
 
 The ML-airport-arrival-runway software is developed to provide a reference implementation to serve as a research example how to train and register Machine Learning (ML) models intended for predicting arrival runway assignments. The software is designed to point to databases which are not provided as part of the software release and thus this software is only intended to serve as an example of best practices. The software is built in python and leverages open-source libraries kedro, scikitlearn, MLFlow, and others. The software provides examples how to build three distinct pipelines for data query and save, data engineering, and data science. These pipelines enable scalable, repeatable, and maintainable development of ML models.
 
-## ML Airport Surface Model Background Information
+### ML Airport Surface Model Background Information
 
 The ML-airport-arrival-runway model is one of several ML models tied together by the Airport Surface Model Orchestrator shown below.
 
@@ -16,7 +16,7 @@ The input data sources for the individual ML prediction services are shown in th
 
 The ML Airport Surface Model forms the building blocks of a cloud based predictive engine that alerts flight operators to pre-departure Trajectory Option Set (TOS) reroute opportunities within the terminal airspace. The ML Airport Surface Model was designed to be a scalable replacement for the capabilities provided by NASA's Surface Trajectory Based Operations (STBO) subsystem, which is a component of the fielded ATD2 Phase 3 System in the North Texas Metroplex. The STBO subsystem relies heavily upon detailed adaptation, which defines the physical constraints and encodes Subject Matter Expert knowledge within decision trees, and creates a costly bottleneck to scaling the pre-departure TOS digital reroute capability across the National Airspace System.
 
-## Steps to start using this project (and some helpful information about Kedro + MLflow projects)
+### Steps to start using this project (and some helpful information about Kedro + MLflow projects)
 
 In addition to the steps below, take a look at the [Kedro documentation](https://kedro.readthedocs.io) and the [MLflow documentation](https://mlflow.org/docs/latest/index.html) for more help getting started.
 
@@ -57,4 +57,127 @@ The parameters file specifies, for instance, the type of maching learning model 
 You may wish to update some of these parameters.
 Items in `parameters.yml` that are surrounded by `${` and `}` will be imported from the `globals.yml`.
 [Kedro's configuration templating documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/03_configuration.html#templating-configuration) provides additional information about templated configurations via `globals.yml`.
+
+*Data Catalog*
+
+Any data sets used in this Kedro project must be declared in the `conf/base/catalog.yml` "data catalog."
+There should not be any reason for you to update this data catalog, but it contains items surrounded by `${` and `}` that will be imported from the `globals.yml` specified for a particular run.
+[Kedro's configuration templating documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/03_configuration.html#templating-configuration) provides additional information.
+
+*Kedro Nodes & Pipelines*
+
+[Kedro pipelines](https://kedro.readthedocs.io/en/stable/04_user_guide/06_pipelines.html) specify a directed acyclic graph of [Kedro nodes](https://kedro.readthedocs.io/en/stable/04_user_guide/05_nodes.html) to be run, with various data sets declared in the `catalog.yml` or parameters specified in `parameters.yml` serving as inputs.
+Other than parameters or data sets declared in the data catalog, model inputs can be names of objects that are output from other nodes, such as intermediate data sets or trained models.
+The overall project pipelines are defined in `src/arr_rwy/pipeline.py`.
+These are defined by combining partial pipelines defined in other places throughout the project.
+For example, some data engineering pipelines are defined in `src/arr_rwy/pipelines/data_engineering/pipeline.py`.
+Nodes are simply wrappers around functions, which in turn can be defined or imported from anywhere, but are often and conventionally defined in various `nodes.py` files in various directories throughout the project.
+
+## Configure MLflow
+
+*MLflow server*
+
+MLflow can be configured to track runs locally or remotely on a server.
+
+*MLflow API*
+
+Throughout the code are some [MLflow API](https://www.mlflow.org/docs/latest/python_api/index.html) calls.
+These do things like log run parameters and metrics to the MLflow server or log run artifacts (e.g., pickled trained models) to the MLflow artifact store.
+
+## Getting data with Data Query and Save (DQS) Pipeline
+
+Most of the data required to run train models in this project can be acquired by running "data query and save" (DQS) pipelines.
+These run some queries per data set declarations in `conf/base/catalog.yml` (with some aspects of these declarations imported from the specified `conf/base/*globals.yml`), accessing databases per credentials in `conf/local/credentials.yml`, and save resulting CSVs locally in the `data/` folder (typically in the `01_raw/` subfolder).
+The CSV data set naming convention puts the relevant airport ICAO code as a prefix (e.g., if running with a `KJFK.globals.yml` for KJFK, then the data sets will be named things like `data/01_raw/KJFK.MFS_data_set.csv`).
+Other data engineering or full pipelines start from those CSVs.
+These commands do not need to be rerun over and over for the same airport and time period; once they are run once the data will be available in the CSVs in the `data/` folder.
+
+Since the data query and save pipelines run queries that retrieve and then save to disk potentially large amounts of data, they can take tens of minutes to hours to run, depending in particular on the duration of time between `start_time` and `end_time` in `globals.yml`.
+To track pipeline run progress during these potentially long runs, Kedro informational logging statements will be printed to the screen.
+
+To get the data needed to train, run the command below from the `ML-airport-arrival-runway/` directory.
+```
+kedro run --pipeline dqs --params global_config_yml:<airport_icao>_globals.yml
+```
+or
+```
+cp ./conf/base/<airport_icao>_globals.yml ./conf/base/globals.yml
+kedro run --pipeline dqs
+```
+The `<airport_icao>` must be replaced by the ICAO identifier. A few other data query pipelines are available, and are listed in the file `src/arr_rwy/pipeline.py`.
+
+## Cleaning data with Data Engineering (DE) Pipeline
+
+After running the queries to get the required data sets, the data can be cleaned with the engineering pipeline.
+
+To perform data engineering, run the commands below.
+```
+cp conf/base/<airport_icao>_globals.yml conf/base/globals.yml
+cp conf/base/<airport_icao>_parameters.yml conf/base/parameters.yml
+kedro run --pipeline de
+```
+
+## Training and testing models with Data Science (DS) Pipeline
+
+After running the queries to get the required data sets, models can be trained and tested.
+
+To train and test an arrival runway model, run the commands below.
+```
+cp conf/base/<airport_icao>_globals.yml conf/base/globals.yml
+cp conf/base/<airport_icao>_parameters.yml conf/base/parameters.yml
+kedro run --pipeline ds
+```
+
+## Working with Kedro from notebooks or IPython
+
+In order to use Jupyter notebooks or IPython in your Kedro project, you need to install Jupyter from within the project's conda environment:
+
+```
+conda install jupyter
+```
+
+For using Jupyter Lab, you need to install it:
+
+```
+conda install jupyterlab
+```
+
+After installing Jupyter and/or Jupyter Lab, you can start a local notebook server:
+
+```
+kedro jupyter notebook
+```
+
+You can also start Jupyter Lab:
+
+```
+kedro jupyter lab
+```
+
+And if you want to run an IPython session:
+
+```
+kedro ipython
+```
+
+Staring Jupyter or IPython this way executes a startup script in `.ipython/profile_default/startup/00-kedro-init.py`.
+This creates a Kedro `context` variable in scope; the `context` can be used to access the data catalog, parameters, execute pipelines or portions thereof, and more.
+See the [relevant Kedro documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/11_ipython.html) for details.
+
+In each of these cases, the session uses the global settings (e.g., airport ICAO) in `conf/base/globals.yml` to populate various items in `parameters.yml` and `catalog.yml`.
+If you wish to adjust those global settings after starting up a Jupyter notebook or an IPython session, simply change the contents of `globals.yml` and run the `%reload_kedro` line magic command.
+
+## Visualizing pipelines with Kedro Viz
+
+The [Kedro viz tool](https://github.com/quantumblacklabs/kedro-viz) can be used to visualize Kedro pipelines.
+To use it, first install it in the project environment via pip.
+```
+pip install kedro-viz
+```
+Then, from the top-level `ML-airport-arrival-runway/` directory, visualize a pipeline by providing its name after the `--pipeline` command line interface command.
+For example, the command below will launch a browser with an interactive visualization of the data science pipeline.
+```
+kedro viz --pipeline ds
+```
+
 
