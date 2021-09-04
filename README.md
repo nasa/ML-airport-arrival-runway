@@ -53,6 +53,7 @@ This will update the Kedro `context` variable to take into account the updated `
 See the "Working with Kedro from notebooks or IPython" section below and the [relevant Kedro documentation](https://kedro.readthedocs.io/en/stable/04_user_guide/11_ipython.html) for additional information about Kedro's Jupyter and IPython capabilities.
 
 *Parameters*
+
 The `conf/base/parameters.yml` file contains any parameters that control various aspects of the pipelines that engineer data and train and test models. This file can be airport-specific as well, and in that case the  ICAO identifier will prefix the file (`<airport_icao>_parameters.yml`).
 The parameters file specifies, for instance, the type of maching learning model that should be used and what hyperparameters will control its training.
 You may wish to update some of these parameters.
@@ -180,5 +181,3 @@ For example, the command below will launch a browser with an interactive visuali
 ```
 kedro viz --pipeline ds
 ```
-
-
